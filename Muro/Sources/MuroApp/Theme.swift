@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Design tokens from the Figma file "Muro — App Design":
+// Design tokens from the Figma file "Displaypaper — App Design":
 // bg #0A0C10 · accent (moonbeam) #A9C4FF · secondary #98A0AC · green #7DE8A8
 // glass = white 7–12% fill + white 10–20% stroke · radii 16/18/99.
 
@@ -90,8 +90,8 @@ extension View {
 // MARK: - Credits
 
 enum Credits {
-    static let name = "MrRockySL"
-    static let url = URL(string: "https://github.com/MrRockySL")!
+    static let name = "Nytuo"
+    static let url = URL(string: "https://github.com/Nytuo")!
 }
 
 // MARK: - Formatting

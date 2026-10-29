@@ -32,7 +32,7 @@ import MuroKit
 //                   else that is live (destructive — rarely what you want)
 //   --reupload      re-send assets for wallpapers already published
 //   --github        use GitHub Releases instead of R2
-//   --repo          GitHub repo               (default: MrRockySL/Muro-Wallpapers)
+//   --repo          GitHub repo               (default: Nytuo/Muro-Wallpapers)
 //   --tag           release tag for assets    (default: wallpapers)
 //   --rebase-urls   repoint every live entry's asset URLs at the current
 //                   publicBaseURL (use after moving the CDN to a new host)
@@ -50,7 +50,7 @@ struct Options {
     var reupload = false
     var reorderOnly = false
     var rebaseURLs = false
-    var repo = "MrRockySL/Muro-Wallpapers"
+    var repo = "Nytuo/Muro-Wallpapers"
     var tag = "wallpapers"
     var catalogPath = "catalog.json"
     var libraryRoot = LibraryManifest.defaultRoot()

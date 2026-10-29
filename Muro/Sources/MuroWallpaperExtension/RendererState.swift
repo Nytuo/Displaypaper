@@ -189,7 +189,7 @@ final class ActiveWallpaper: @unchecked Sendable {
 
 final class RendererState: @unchecked Sendable {
     static let shared = RendererState()
-    static let lifecycleQueue = DispatchQueue(label: "com.mrrockysl.muro.wallpaper-lifecycle")
+    static let lifecycleQueue = DispatchQueue(label: "com.nytuo.displaypaper.wallpaper-lifecycle")
 
     private let lock = NSLock()
     private var active: [WallpaperSurfaceKey: ActiveWallpaper] = [:]

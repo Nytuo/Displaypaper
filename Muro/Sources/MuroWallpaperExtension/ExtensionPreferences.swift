@@ -26,7 +26,7 @@ final class ExtensionPreferences: @unchecked Sendable {
             center,
             Unmanaged.passUnretained(self).toOpaque(),
             { _, _, _, _, _ in ExtensionPreferences.shared.reloadAndApply() },
-            "com.mrrockysl.muro.wallpaper.preferences-changed" as CFString,
+            "com.nytuo.displaypaper.wallpaper.preferences-changed" as CFString,
             nil,
             .deliverImmediately
         )

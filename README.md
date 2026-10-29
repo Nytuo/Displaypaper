@@ -1,3 +1,15 @@
+# Displaypaper
+
+Displaypaper is a macOS wallpaper app forked from Muro, originally created by MrRockySL. It uses [wallpaper-engine-rosetta](https://github.com/Nytuo/wallpaper-engine-rosetta) for Wallpaper Engine scenes.
+
+Workshop video, scene, and web items can be imported into the library. Scene and web wallpapers run on the desktop; their declared properties can be edited in the wallpaper preview. Scene changes are translated again from the retained Workshop files. Web wallpapers run in a WebKit view with the engine's Wallpaper Engine page API shim.
+
+Scene video layers require `ffmpeg` available on PATH or in a standard Homebrew location. The renderer supports features to the extent implemented by the submodule; some effects and scripts are approximate. System-audio capture for reactive wallpapers is not currently integrated on macOS, so their audio spectrum is silent. Web wallpapers and scenes cannot be used as macOS lock-screen or screen-saver videos.
+
+The sections below describe the original Muro project and may contain historical names and release information.
+
+---
+
 <div align="center">
 
 <img src="assets/icon.png" width="120" alt="Muro">

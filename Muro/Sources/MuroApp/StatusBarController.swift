@@ -108,7 +108,7 @@ final class StatusBarController: NSObject {
         // Here, not in the SwiftUI view's `onAppear`. The panel's hosting view
         // is built once and this only orders it back on screen, so `onAppear`
         // fires on the very first open and never again: a check made on Monday
-        // was still saying "Muro is up to date" on Friday.
+        // was still saying "Displaypaper is up to date" on Friday.
         store.clearUpdateCheckResult()
         let size = hostingView.fittingSize
         let anchor = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))

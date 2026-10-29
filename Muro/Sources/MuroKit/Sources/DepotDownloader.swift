@@ -199,12 +199,27 @@ public final class WorkshopDownload: @unchecked Sendable {
     /// The QR code DepotDownloader draws as text, two characters per module,
     /// turned into real modules.
     public static func qrCode(in lines: [String]) -> [[Bool]]? {
-        guard let start = lines.lastIndex(where: { $0.lowercased().contains("sign in with this qr code") })
-        else { return nil }
+        // DepotDownloader may color its terminal QR and streams ANSI escape sequences
+        // even when its output is captured by a pipe. Strip those controls and tolerate
+        // the heading changing between releases before parsing the block art.
+        let ansi = try? NSRegularExpression(pattern: #"\u001B\[[0-?]*[ -/]*[@-~]"#)
+        let clean = lines.map { line -> String in
+            let range = NSRange(line.startIndex..., in: line)
+            return ansi?.stringByReplacingMatches(in: line, range: range, withTemplate: "")
+                .trimmingCharacters(in: .newlines) ?? line.trimmingCharacters(in: .newlines)
+        }
+        guard let start = clean.lastIndex(where: {
+            let normalized = $0.lowercased()
+            return normalized.contains("qr code") && (normalized.contains("sign in") || normalized.contains("scan"))
+        }) else { return nil }
         var rows: [String] = []
-        for line in lines[(start + 1)...] {
-            guard line.allSatisfy({ $0 == "█" || $0 == " " || $0 == "▀" || $0 == "▄" }) else { break }
-            rows.append(line)
+        for line in clean[(start + 1)...] {
+            let row = line.trimmingCharacters(in: .newlines)
+            guard !row.isEmpty, row.allSatisfy({ $0 == "█" || $0 == " " || $0 == "▀" || $0 == "▄" }) else {
+                if rows.isEmpty { continue }
+                break
+            }
+            rows.append(row)
         }
         guard rows.count >= 15 else { return nil }
         let columns = (rows.map(\.count).max() ?? 0) / 2

@@ -97,7 +97,10 @@ public final class EngineController {
             else { continue }
             let content: WallpaperWindowController.Content
             let required: URL
-            if let scene = entry.scene {
+            if let web = entry.web {
+                content = .web(root.appendingPathComponent(web, isDirectory: true))
+                required = root.appendingPathComponent(web, isDirectory: true).appendingPathComponent("project.json")
+            } else if let scene = entry.scene {
                 let directory = root.appendingPathComponent(scene, isDirectory: true)
                 content = .scene(directory)
                 required = directory.appendingPathComponent("scene.json")
@@ -173,7 +176,7 @@ public final class EngineController {
     private static func contentKey(entry: WallpaperEntry, mode: String, required: URL) -> String {
         guard entry.isScene else { return "\(entry.id)|\(mode)" }
         let written = (try? FileManager.default.attributesOfItem(atPath: required.path)[.modificationDate]) as? Date
-        return "\(entry.id)|scene|\(Int(written?.timeIntervalSince1970 ?? 0))"
+        return "\(entry.id)|scene|\(written?.timeIntervalSince1970 ?? 0)"
     }
 
     /// Issue #22. Hands both desktop switches to every display, and keeps the

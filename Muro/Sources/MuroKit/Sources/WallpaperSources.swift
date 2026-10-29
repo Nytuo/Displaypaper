@@ -112,7 +112,7 @@ public enum SourceBrowser {
     public static func workshop(
         query: String, type: WorkshopItemType, page: Int, refresh: Bool = false
     ) async throws -> [SourceResult] {
-        try await cached(source: .workshop, scope: "\(type.rawValue)|\(query)", page: page, refresh: refresh) {
+        try await cached(source: .workshop, scope: "steam-layout-v2|\(type.rawValue)|\(query)", page: page, refresh: refresh) {
             try await fetchWorkshop(query: query, type: type, page: page)
         }
     }
@@ -228,9 +228,12 @@ public enum SourceBrowser {
     // MARK: - Parsing
 
     static func parseWorkshop(_ html: String) -> [SourceResult] {
-        let pattern = #"sharedfiles/filedetails/\?id=(\d+)"\s+class="[^"]*"><img src="([^"]+)" alt="([^"]*)""#
+        // Steam's Workshop browse was migrated to a new tile layout in 2026.
+        // The item link, image and alt text remain semantic, but the old parser
+        // depended on a now-removed class attribute immediately after the href.
+        let pattern = #"<a\b[^>]*href="(?:https?://steamcommunity\.com)?/sharedfiles/filedetails/\?id=(\d+)[^"]*"[^>]*>.*?<img\b[^>]*src="([^"]+)"[^>]*alt="([^"]*)""#
         var seen = Set<String>()
-        return matches(pattern, in: html).compactMap { groups in
+        return matches(pattern, in: html, dotAll: true).compactMap { groups in
             guard seen.insert(groups[1]).inserted,
                   let thumbnail = URL(string: unescapeHTML(groups[2]))
             else { return nil }

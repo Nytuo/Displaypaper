@@ -28,10 +28,11 @@ public struct WallpaperEntry: Codable, Identifiable, Equatable {
     /// Where a wallpaper was downloaded from outside Muro's own catalog, as
     /// `<source>:<key>`, e.g. `workshop:2853719148`. Lets Explore show a
     /// browse result as already in the library.
+    public var web: String?
     public var origin: String?
     public var hasAudio: Bool?
 
-    public var isScene: Bool { scene != nil }
+    public var isScene: Bool { scene != nil || web != nil }
 
     public init(
         id: String, title: String, category: String, file: String,
@@ -40,9 +41,10 @@ public struct WallpaperEntry: Codable, Identifiable, Equatable {
         height: Int, fps: Double, duration: Double, sizeBytes: Int64,
         liked: Bool = false, dateAdded: Date = Date(),
         pauseAfterSeconds: Int? = nil,
-        scene: String? = nil, origin: String? = nil, hasAudio: Bool? = nil
+        scene: String? = nil, web: String? = nil, origin: String? = nil, hasAudio: Bool? = nil
     ) {
         self.scene = scene
+        self.web = web
         self.origin = origin
         self.hasAudio = hasAudio
         self.id = id
@@ -67,7 +69,7 @@ public struct WallpaperEntry: Codable, Identifiable, Equatable {
     /// list by hand was one more chance to forget the preview or the
     /// efficient variant and leave it on disk forever.
     public var relativeFiles: [String] {
-        [file, efficientFile, previewFile, thumbnail, scene].compactMap { $0 }
+        [file, efficientFile, previewFile, thumbnail, scene, web].compactMap { $0 }
     }
 }
 

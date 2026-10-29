@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Muro Wallpaper</string>
+    <string>Displaypaper Wallpaper</string>
     <key>CFBundleDisplayName</key>
-    <string>Muro Wallpaper</string>
+    <string>Displaypaper Wallpaper</string>
     <key>CFBundleExecutable</key>
     <string>MuroWallpaperExtension</string>
     <key>CFBundleIdentifier</key>
-    <string>com.mrrockysl.muro.wallpaper-extension</string>
+    <string>com.nytuo.displaypaper.wallpaper-extension</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundlePackageType</key>

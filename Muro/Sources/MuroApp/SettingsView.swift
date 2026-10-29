@@ -63,7 +63,7 @@ struct SettingsView: View {
                     }
                     divider
                     row(icon: "dock.rectangle", tint: .pink, title: "Show Dock Icon",
-                        subtitle: "Off keeps Muro in the menu bar only") {
+                        subtitle: "Off keeps Displaypaper in the menu bar only") {
                         Toggle("", isOn: $showDockIcon)
                             .toggleStyle(.switch)
                             .tint(Color.muroAccent)
@@ -308,7 +308,14 @@ struct SettingsView: View {
                             )
                         )
                     }
-                    if !sources.workshopUsesQR {
+                    if sources.workshopUsesQR {
+                        divider
+                        Text("To sign in, choose a Workshop item and start its download. The Steam QR code will appear in the download window.")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Color.muroSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.leading, 46)
+                    } else {
                         divider
                         row(icon: "at", tint: .purple, title: "Username",
                             subtitle: "Must own Wallpaper Engine") {
@@ -371,8 +378,8 @@ struct SettingsView: View {
                     }
                     divider
                     row(icon: "heart.fill", tint: .pink,
-                        title: "Support Muro",
-                        subtitle: "Muro is free. Sponsoring keeps it that way.") {
+                        title: "Support Displaypaper",
+                        subtitle: "Displaypaper is free. Sponsoring keeps it that way.") {
                         sponsorControl
                     }
                 }
@@ -492,7 +499,7 @@ struct SettingsView: View {
         VStack(spacing: 8) {
             MuroMark(cornerRadius: 16)
                 .frame(width: 64, height: 64)
-            Text("Muro")
+            Text("Displaypaper")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
             Text("Version \(AppStore.appVersion)")
@@ -502,13 +509,16 @@ struct SettingsView: View {
                 Button {
                     openWhatsNew(store)
                 } label: {
-                    Text("Muro \(version) is available. See what's new.")
+                    Text("Displaypaper \(version) is available. See what's new.")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color.muroAccent)
                 }
                 .buttonStyle(.plain)
             }
-            CreditLink(text: "Designed & developed by \(Credits.name)", size: 10)
+            CreditLink(text: "Developed by \(Credits.name)", size: 10)
+            Text("Originally created by MrRockySL")
+                .font(.caption)
+                .foregroundStyle(Color.muroSecondary)
                 .padding(.top, 2)
         }
     }
@@ -574,9 +584,9 @@ struct SettingsView: View {
 
     private var updateSubtitle: String {
         switch store.updateCheck {
-        case .idle:      return "Muro \(AppStore.appVersion)"
+        case .idle:      return "Displaypaper \(AppStore.appVersion)"
         case .checking:  return "Checking GitHub…"
-        case .upToDate:  return "Muro \(AppStore.appVersion) is the latest version"
+        case .upToDate:  return "Displaypaper \(AppStore.appVersion) is the latest version"
         case .available(let version, _):
             return "Version \(version) is available on GitHub"
         case .failed:    return "Couldn't check. Check your connection."
@@ -663,7 +673,7 @@ struct SettingsView: View {
     private var menuBarSubtitle: String {
         showMenuBarIcon || showDockIcon
             ? "Quick controls from the menu bar"
-            : "Open Muro from Launchpad or Spotlight"
+            : "Open Displaypaper from Launchpad or Spotlight"
     }
 
     private func row(

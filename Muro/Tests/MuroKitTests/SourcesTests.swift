@@ -324,14 +324,28 @@ final class SceneEntryTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: outside.path))
     }
 
-    func testWebItemsAreRefusedWithAReason() throws {
+    func testWebItemImportsAndDeletesItsFiles() throws {
         let item = root.appendingPathComponent("item", isDirectory: true)
         try FileManager.default.createDirectory(at: item, withIntermediateDirectories: true)
         try Data(#"{"title":"Site","type":"web","file":"index.html"}"#.utf8)
             .write(to: item.appendingPathComponent("project.json"))
-        XCTAssertThrowsError(try WorkshopImporter.importItem(at: item, publishedFileID: "1", root: root)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("Web"))
-        }
+        try Data("<html></html>".utf8).write(to: item.appendingPathComponent("index.html"))
+        let result = try WorkshopImporter.importItem(at: item, publishedFileID: "1", root: root)
+        let entry = result.entry
+        XCTAssertNotNil(entry.web)
+        XCTAssertTrue(entry.isScene)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent(entry.file).path))
+        XCTAssertEqual(LibraryManifest.load(root: root).wallpapers.first?.web, entry.web)
+        try LibraryWriter.delete(ids: [entry.id], root: root)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent(entry.web!).path))
+    }
+
+    func testWebItemCannotReferenceOutsideItsDirectory() throws {
+        let item = root.appendingPathComponent("item", isDirectory: true)
+        try FileManager.default.createDirectory(at: item, withIntermediateDirectories: true)
+        try Data(#"{"type":"web","file":"../outside.html"}"#.utf8).write(to: item.appendingPathComponent("project.json"))
+        try Data("outside".utf8).write(to: root.appendingPathComponent("outside.html"))
+        XCTAssertThrowsError(try WorkshopImporter.importItem(at: item, publishedFileID: "1", root: root))
     }
 
     func testARealWorkshopSceneImports() throws {

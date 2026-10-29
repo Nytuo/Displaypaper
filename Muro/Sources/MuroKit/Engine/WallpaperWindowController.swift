@@ -14,10 +14,11 @@ public final class WallpaperWindowController {
     public enum Content: Equatable {
         case video(URL)
         case scene(URL)
+        case web(URL)
 
         public var url: URL {
             switch self {
-            case .video(let url), .scene(let url): return url
+            case .video(let url), .scene(let url), .web(let url): return url
             }
         }
     }
@@ -25,6 +26,7 @@ public final class WallpaperWindowController {
     private let window: NSWindow
     private let screenScale: CGFloat
     private var scene: SceneSurface?
+    private var web: WebSurface?
     private var player: AVQueuePlayer
     private var playerLayer: AVPlayerLayer
     private var looper: AVPlayerLooper?
@@ -128,6 +130,8 @@ public final class WallpaperWindowController {
             looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
         case .scene(let directory):
             attachScene(directory)
+        case .web(let directory):
+            attachWeb(directory)
         }
     }
 
@@ -136,13 +140,19 @@ public final class WallpaperWindowController {
         switch content {
         case .video(let url): setVideo(url: url)
         case .scene(let directory): setScene(directory)
+        case .web(let directory): setWeb(directory)
         }
     }
 
-    // MARK: - Scenes
+    private func attachWeb(_ directory: URL) {
+        guard let content = window.contentView, let surface = WebSurface(directory: directory, frame: content.bounds) else { return }
+        content.addSubview(surface.view)
+        surface.setVolume(effectiveVolume)
+        surface.setSuspended(!holds.isEmpty)
+        web = surface
+    }
 
-    private func setScene(_ directory: URL) {
-        guard directory != currentURL || scene == nil else { return }
+    private func setWeb(_ directory: URL) {
         currentURL = directory
         discardPendingSwap()
         looper?.disableLooping()
@@ -151,6 +161,26 @@ public final class WallpaperWindowController {
         player.removeAllItems()
         scene?.invalidate()
         scene = nil
+        web?.invalidate()
+        web = nil
+        attachWeb(directory)
+        release("settled")
+        armSettleTimer()
+    }
+
+    // MARK: - Scenes
+
+    private func setScene(_ directory: URL) {
+        currentURL = directory
+        discardPendingSwap()
+        looper?.disableLooping()
+        looper = nil
+        player.pause()
+        player.removeAllItems()
+        scene?.invalidate()
+        scene = nil
+        web?.invalidate()
+        web = nil
         attachScene(directory)
         release("settled")
         armSettleTimer()
@@ -167,6 +197,7 @@ public final class WallpaperWindowController {
         }
         surface.window = window
         surface.setVolume(effectiveVolume)
+        surface.setPlaybackRate(desiredRate)
         surface.layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -240,7 +271,9 @@ public final class WallpaperWindowController {
         let outgoingLayer = playerLayer
         let outgoingLooper = looper
         let outgoingScene = scene
+        let outgoingWeb = web
         scene = nil
+        web = nil
 
         player = incoming.player
         playerLayer = incoming.layer
@@ -255,6 +288,7 @@ public final class WallpaperWindowController {
             outgoingLayer.player = nil
             outgoingLayer.removeFromSuperlayer()
             outgoingScene?.invalidate()
+            outgoingWeb?.invalidate()
         }
         incoming.layer.opacity = 1
         CATransaction.commit()
@@ -291,6 +325,8 @@ public final class WallpaperWindowController {
         player.pause()
         scene?.invalidate()
         scene = nil
+        web?.invalidate()
+        web = nil
         for observer in observers {
             NotificationCenter.default.removeObserver(observer)
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
@@ -430,12 +466,14 @@ public final class WallpaperWindowController {
             player.volume = Float(level)
         }
         scene?.setVolume(level)
+        web?.setVolume(level)
     }
 
     /// Playback speed from Settings (0.5×–1.5×). Applied live when playing.
     public func setPlaybackRate(_ rate: Float) {
         guard abs(rate - desiredRate) > 0.001 else { return }
         desiredRate = rate
+        scene?.setPlaybackRate(rate)
         for player in allPlayers where player.rate > 0 { player.rate = rate }
     }
 
@@ -496,6 +534,7 @@ public final class WallpaperWindowController {
         if wasEmpty {
             allPlayers.forEach { $0.pause() }
             scene?.setSuspended(true)
+            web?.setSuspended(true)
             EngineLog.log("paused (\(reason))")
         }
     }
@@ -504,6 +543,7 @@ public final class WallpaperWindowController {
         holds.remove(reason)
         guard holds.isEmpty else { return }
         scene?.setSuspended(false)
+        web?.setSuspended(false)
         let stopped = allPlayers.filter { $0.rate == 0 }
         guard !stopped.isEmpty else { return }
         stopped.forEach { $0.playImmediately(atRate: desiredRate) }

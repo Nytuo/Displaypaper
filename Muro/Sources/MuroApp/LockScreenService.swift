@@ -15,7 +15,7 @@ enum LockScreenServiceError: LocalizedError {
         case .requiresTahoe:
             return "Lock-screen live wallpapers require macOS 26 or later."
         case .extensionMissing:
-            return "Muro’s lock-screen extension is missing. Reinstall this build of Muro."
+            return "Displaypaper’s lock-screen extension is missing. Reinstall this build of Displaypaper."
         case .extensionNotRegistered:
             return """
             macOS would not load Muro’s lock-screen extension. \
@@ -68,7 +68,7 @@ enum LockScreenApplyOutcome {
 ///
 /// It restores every record it owns before deleting staged files.
 final class LockScreenService {
-    static let extensionBundleID = "com.mrrockysl.muro.wallpaper-extension"
+    static let extensionBundleID = "com.nytuo.displaypaper.wallpaper-extension"
     private static let removedSelection = "__none__"
 
     private struct SelectionState: Codable {
@@ -257,8 +257,8 @@ final class LockScreenService {
             switch self {
             case .available: return ""
             case .needsNewerOS: return "This needs macOS 26"
-            case .extensionMissing: return "Not in this build of Muro"
-            case .translocated: return "Move Muro first"
+            case .extensionMissing: return "Not in this build of Displaypaper"
+            case .translocated: return "Move Displaypaper first"
             }
         }
 
@@ -540,7 +540,7 @@ final class LockScreenService {
                         acknowledged = true
                     }
                     // **A receipt is no longer enough on its own, and neither
-                    // is "Muro is in one of the files".** Both were true on the
+                    // is "Displaypaper is in one of the files".** Both were true on the
                     // owner's Mac on 2026-09-10 while `Index.plist`, the file
                     // macOS reads, had the screen saver back on Apple's
                     // default. The loop broke on the first pass with two passes
@@ -788,7 +788,7 @@ final class LockScreenService {
     /// The store files that are **not** holding this role right now.
     ///
     /// `wallpaperStoresHaveSelection` above is deliberately loose: it answers
-    /// "is Muro anywhere at all", and `healIfNeeded` needs exactly that,
+    /// "is Displaypaper anywhere at all", and `healIfNeeded` needs exactly that,
     /// because the branch it guards tears everything down. It must not be
     /// tightened.
     ///
@@ -1053,7 +1053,7 @@ final class LockScreenService {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(
             center,
-            .init("com.mrrockysl.muro.wallpaper.preferences-changed" as CFString),
+            .init("com.nytuo.displaypaper.wallpaper.preferences-changed" as CFString),
             nil,
             nil,
             true
@@ -1073,7 +1073,7 @@ final class LockScreenService {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(
             center,
-            .init("com.mrrockysl.muro.wallpaper.preferences-changed" as CFString),
+            .init("com.nytuo.displaypaper.wallpaper.preferences-changed" as CFString),
             nil,
             nil,
             true
@@ -1084,7 +1084,7 @@ final class LockScreenService {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
         CFNotificationCenterPostNotification(
             center,
-            .init("com.mrrockysl.muro.wallpaper.library-changed" as CFString),
+            .init("com.nytuo.displaypaper.wallpaper.library-changed" as CFString),
             nil,
             nil,
             true
@@ -1407,8 +1407,8 @@ final class LockScreenService {
     /// what takes it away. Measured twice on the owner's Mac, from macOS's own
     /// log, within a second of the app starting:
     ///
-    ///     extension-proxy: interruptionHandler called for com.mrrockysl.muro…
-    ///     extension-proxy: invalidationHandler called for com.mrrockysl.muro…
+    ///     extension-proxy: interruptionHandler called for com.nytuo.displaypaper…
+    ///     extension-proxy: invalidationHandler called for com.nytuo.displaypaper…
     ///     extension-proxy: ERROR - connect: com.apple.extensionKit.errorDomain (2)
     ///
     /// macOS drops the extension, tries to reconnect once, fails, and then

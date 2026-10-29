@@ -3,7 +3,7 @@ import Darwin
 import ExtensionFoundation
 import Foundation
 
-let extensionDomain = "com.mrrockysl.muro.wallpaper-extension"
+let extensionDomain = "com.nytuo.displaypaper.wallpaper-extension"
 
 // MARK: - Logging
 //
@@ -29,7 +29,7 @@ nonisolated(unsafe) private let logTimestamps = ISO8601DateFormatter()
 
 /// Serialises writes, since renderer, XPC and notification callbacks all log
 /// from different queues.
-private let logQueue = DispatchQueue(label: "com.mrrockysl.muro.wallpaper-log")
+private let logQueue = DispatchQueue(label: "com.nytuo.displaypaper.wallpaper-log")
 
 private let maxLogBytes = 256 * 1024
 
@@ -136,7 +136,7 @@ private final class WallpaperXPCHandler: NSObject, WallpaperExtensionXPCProtocol
     }
 
     private static let snapshotQueue = DispatchQueue(
-        label: "com.mrrockysl.muro.wallpaper-snapshot"
+        label: "com.nytuo.displaypaper.wallpaper-snapshot"
     )
     private var acquiredAsPreview = false
 

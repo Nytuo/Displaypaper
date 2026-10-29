@@ -26,15 +26,19 @@ public final class SceneSurface {
     private static let frameInterval: TimeInterval = 1.0 / 30.0
 
     /// A scene's own sound, when it has any and the user has asked for it.
-    private var audioPlayer: AVQueuePlayer?
-    private var audioLooper: AVPlayerLooper?
-    private var audioLayerVolume: Float = 1
+    private struct PlayingAudio {
+        let player: AVQueuePlayer
+        let looper: AVPlayerLooper
+        let layerVolume: Float
+    }
+    private var audioPlayers: [PlayingAudio] = []
     private var volume: Double = 0
     private var description: SceneDescription?
 
     /// Fails when there is no Metal device or the scene cannot be loaded or
     /// attached. The caller shows the thumbnail instead of an empty layer.
     public init?(sceneDirectory: URL, size: CGSize, scale: CGFloat, volume: Double = 0) {
+        WorkshopImporter.makeToolsReachable()
         guard let device = MTLCreateSystemDefaultDevice(),
               let handle = wer_engine_create()
         else { return nil }
@@ -63,7 +67,9 @@ public final class SceneSurface {
         }
 
         self.handle = handle
-        animates = wer_engine_needs_animation(handle) != 0
+        // The upstream animation query does not yet include scripts, models or
+        // embedded video layers. Tick all scenes so those features can update.
+        animates = true
         description = SceneDescription.read(directory: sceneDirectory)
         if let description {
             parallax = description.parallaxEnabled && description.parallaxAmount > 0
@@ -79,6 +85,11 @@ public final class SceneSurface {
         if let handle { wer_engine_destroy(handle) }
     }
 
+    public func setPlaybackRate(_ rate: Float) {
+        guard let handle else { return }
+        wer_engine_set_effect_speed(handle, rate)
+    }
+
     public var hasAudio: Bool { description?.audio.isEmpty == false }
 
     public func setVolume(_ newVolume: Double) {
@@ -89,30 +100,31 @@ public final class SceneSurface {
             tearDownAudio()
             return
         }
-        if wasSilent || audioPlayer == nil { setUpAudio() }
-        audioPlayer?.volume = Float(clamped) * audioLayerVolume
+        if wasSilent || audioPlayers.isEmpty { setUpAudio() }
+        for audio in audioPlayers { audio.player.volume = Float(clamped) * audio.layerVolume }
     }
 
     private func setUpAudio() {
-        guard audioPlayer == nil, let layer = description?.audio.first,
-              FileManager.default.fileExists(atPath: layer.url.path)
-        else { return }
-        audioLayerVolume = Float(layer.volume)
-        let player = AVQueuePlayer()
-        player.actionAtItemEnd = .none
-        player.preventsDisplaySleepDuringVideoPlayback = false
-        player.volume = Float(volume) * audioLayerVolume
-        audioLooper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: layer.url))
-        audioPlayer = player
-        if !suspended { player.play() }
+        guard audioPlayers.isEmpty, let layers = description?.audio else { return }
+        for layer in layers where FileManager.default.fileExists(atPath: layer.url.path) {
+            let player = AVQueuePlayer()
+            player.actionAtItemEnd = .none
+            player.preventsDisplaySleepDuringVideoPlayback = false
+            let layerVolume = Float(max(0, min(1, layer.volume)))
+            player.volume = Float(volume) * layerVolume
+            let looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: layer.url))
+            audioPlayers.append(PlayingAudio(player: player, looper: looper, layerVolume: layerVolume))
+            if !suspended { player.play() }
+        }
     }
 
     private func tearDownAudio() {
-        audioLooper?.disableLooping()
-        audioPlayer?.pause()
-        audioPlayer?.removeAllItems()
-        audioLooper = nil
-        audioPlayer = nil
+        for audio in audioPlayers {
+            audio.looper.disableLooping()
+            audio.player.pause()
+            audio.player.removeAllItems()
+        }
+        audioPlayers.removeAll()
     }
 
     public func setSuspended(_ value: Bool) {
@@ -120,7 +132,7 @@ public final class SceneSurface {
         suspended = value
         wer_engine_set_occluded(handle, value ? 1 : 0)
         if !value { wer_engine_tick(handle) }
-        value ? audioPlayer?.pause() : audioPlayer?.play()
+        for audio in audioPlayers { value ? audio.player.pause() : audio.player.play() }
         updateTimer()
     }
 
@@ -165,7 +177,7 @@ public final class SceneSurface {
 
     private func frame() {
         guard let handle, !suspended else { return }
-        if parallax, let window {
+        if let window {
             let frame = window.frame
             let mouse = NSEvent.mouseLocation
             if frame.width > 0, frame.height > 0 {

@@ -20,7 +20,7 @@ final class VideoRenderer: @unchecked Sendable {
     private let timebase: CMTimebase
     private let asset: AVURLAsset
     private let videoTrack: AVAssetTrack
-    private let queue = DispatchQueue(label: "com.mrrockysl.muro.video-renderer", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.nytuo.displaypaper.video-renderer", qos: .userInitiated)
 
     private var currentReader: AVAssetReader?
     private var currentOutput: AVAssetReaderTrackOutput?

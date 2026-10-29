@@ -12,7 +12,7 @@ VERSION="5.0"
 BUILD="36"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-APP="$DIR/dist/Muro.app"
+APP="$DIR/dist/Displaypaper.app"
 
 # Universal, so every Mac that can run macOS 14 gets a native slice rather
 # than only Apple Silicon. Both slices are the same source compiled twice,
@@ -50,7 +50,7 @@ echo "==> assembling $APP"
 rm -rf "$DIR/dist"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-cp "$BIN_PATH/muro-app" "$APP/Contents/MacOS/Muro"
+cp "$BIN_PATH/muro-app" "$APP/Contents/MacOS/Displaypaper"
 
 # macOS 26+ lock-screen renderer. Build it as a real ExtensionKit target so
 # ExtensionFoundation installs the correct entry point and actor isolation.
@@ -101,12 +101,12 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>            <string>Muro</string>
-    <key>CFBundleDisplayName</key>     <string>Muro</string>
-    <key>CFBundleExecutable</key>      <string>Muro</string>
+    <key>CFBundleName</key>            <string>Displaypaper</string>
+    <key>CFBundleDisplayName</key>     <string>Displaypaper</string>
+    <key>CFBundleExecutable</key>      <string>Displaypaper</string>
     <key>CFBundleIconFile</key>        <string>AppIcon</string>
     <key>CFBundleIconName</key>        <string>AppIcon</string>
-    <key>CFBundleIdentifier</key>      <string>com.mrrockysl.muro</string>
+    <key>CFBundleIdentifier</key>      <string>com.nytuo.displaypaper</string>
     <key>CFBundleVersion</key>         <string>$BUILD</string>
     <key>CFBundleShortVersionString</key> <string>$VERSION</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
@@ -114,7 +114,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key>  <string>14.0</string>
     <key>NSHighResolutionCapable</key> <true/>
     <key>LSApplicationCategoryType</key> <string>public.app-category.entertainment</string>
-    <key>NSHumanReadableCopyright</key> <string>Designed &amp; developed by MrRockySL</string>
+    <key>NSHumanReadableCopyright</key> <string>Developed by Nytuo</string>
 </dict>
 </plist>
 PLIST
@@ -139,19 +139,19 @@ for arg in "$@"; do
     case "$arg" in
     --install)
         echo "==> installing to /Applications"
-        rm -rf /Applications/Muro.app
-        cp -R "$APP" /Applications/Muro.app
-        echo "==> installed: /Applications/Muro.app"
+        rm -rf /Applications/Displaypaper.app
+        cp -R "$APP" /Applications/Displaypaper.app
+        echo "==> installed: /Applications/Displaypaper.app"
         ;;
     --dmg)
-        DMG="$DIR/dist/Muro-$VERSION.dmg"
+        DMG="$DIR/dist/Displaypaper-$VERSION.dmg"
         STAGING="$DIR/dist/dmg-staging"
         echo "==> building $DMG"
         rm -rf "$STAGING" "$DMG"
         mkdir -p "$STAGING"
-        cp -R "$APP" "$STAGING/Muro.app"
+        cp -R "$APP" "$STAGING/Displaypaper.app"
         ln -s /Applications "$STAGING/Applications"
-        hdiutil create -volname "Muro" -srcfolder "$STAGING" -format UDZO -quiet "$DMG"
+        hdiutil create -volname "Displaypaper" -srcfolder "$STAGING" -format UDZO -quiet "$DMG"
         rm -rf "$STAGING"
         echo "==> dmg: $DMG"
         ;;

@@ -74,7 +74,7 @@ struct MenuBarView: View {
                 } label: {
                     HStack(spacing: 5) {
                         NotificationDot(size: 6)
-                        Text("Muro \(version) available")
+                        Text("Displaypaper \(version) available")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(Color.muroAccent)
                     }
@@ -316,7 +316,7 @@ struct MenuBarView: View {
 
     private var menuButtons: some View {
         VStack(spacing: 2) {
-            menuRow("Open Muro", icon: "macwindow") {
+            menuRow("Open Displaypaper", icon: "macwindow") {
                 StatusBarController.shared?.closePanel()
                 showMainWindow()
             }
@@ -325,7 +325,7 @@ struct MenuBarView: View {
                 openSettingsWindow()
             }
             updateRow
-            menuRow("Quit Muro", icon: "power", trailingText: "⌘Q") {
+            menuRow("Quit Displaypaper", icon: "power", trailingText: "⌘Q") {
                 NSApp.terminate(nil)
             }
         }
@@ -416,7 +416,7 @@ struct MenuBarView: View {
                     .frame(width: 16, height: 16)
             }
         case .upToDate:
-            updateStatusRow(icon: "checkmark.circle", title: "Muro is up to date") {
+            updateStatusRow(icon: "checkmark.circle", title: "Displaypaper is up to date") {
                 Text("v\(AppStore.appVersion)")
                     .font(.system(size: 11))
                     .foregroundStyle(Color.muroSecondary)
@@ -445,7 +445,7 @@ struct MenuBarView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(Color.muroAccent)
                     .frame(width: 16)
-                Text("Muro \(version) is available")
+                Text("Displaypaper \(version) is available")
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.white)
                 Spacer()

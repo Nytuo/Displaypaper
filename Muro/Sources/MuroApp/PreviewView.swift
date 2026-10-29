@@ -40,6 +40,8 @@ struct PreviewView: View {
 
     @State private var showDisplayPopover = false
     @State private var customPauseAfter = false
+    @State private var showProperties = false
+    @State private var previewRevision = 0
     @StateObject private var loader = PreviewLoader()
 
     /// Live item — refreshes as downloads/likes/manifest change.
@@ -48,7 +50,7 @@ struct PreviewView: View {
     var body: some View {
         if let item {
             ZStack(alignment: .bottom) {
-                media(item)
+                media(item).id(previewRevision)
                 LinearGradient(
                     colors: [.clear, .black.opacity(0.45)],
                     startPoint: .center, endPoint: .bottom
@@ -59,6 +61,13 @@ struct PreviewView: View {
             }
             .ignoresSafeArea()
             .background(Color.muroBG)
+            .sheet(isPresented: $showProperties) {
+                if let entry = item.local { WorkshopPropertiesView(entry: entry, root: store.root) {
+                    previewRevision += 1
+                    store.reloadFromDisk()
+                    try? store.config.save(root: store.root)
+                } }
+            }
         }
     }
 
@@ -69,6 +78,8 @@ struct PreviewView: View {
                              store.videoURL(for: item, mode: "smooth") {
                     // Downloaded → the real master, full quality.
                     LoopingPlayerView(url: url)
+                } else if let web = item.local?.web {
+                    WebPreview(directory: store.root.appendingPathComponent(web, isDirectory: true))
                 } else if let scene = store.sceneDirectory(for: item) {
                     SceneView(directory: scene)
                 } else if item.id == BundledWallpaper.id,
@@ -121,7 +132,7 @@ struct PreviewView: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(item.isScene
-                     ? "\(item.width)×\(item.height) · \(formatSize(item.sizeBytes)) · Wallpaper Engine scene"
+                     ? "\(item.width)×\(item.height) · \(formatSize(item.sizeBytes)) · Wallpaper Engine \(item.isWeb ? "web" : "scene")"
                      : "\(item.width)×\(item.height) · \(formatSize(item.sizeBytes)) · \(formatDuration(item.duration))")
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundStyle(Color.muroSecondary)
@@ -144,7 +155,12 @@ struct PreviewView: View {
                 .buttonStyle(.plain)
             }
 
-            if item.isScene {
+            if let entry = item.local, (entry.scene != nil || entry.web != nil) {
+                Button { showProperties = true } label: { barIcon("slider.horizontal.3") }
+                    .buttonStyle(.plain).help("Wallpaper properties")
+            }
+
+            if item.isScene && !item.isWeb {
                 SceneWarningButton(item: item)
             }
 
@@ -536,7 +552,7 @@ struct ChooseDisplayPopover: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white)
 
-            Text("Muro draws a Wallpaper Engine scene live. The lock screen and the screen saver are drawn by macOS from a video, so a scene cannot go there.")
+            Text("Displaypaper draws a Wallpaper Engine scene live. The lock screen and the screen saver are drawn by macOS from a video, so a scene cannot go there.")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(Color.muroSecondary)
                 .multilineTextAlignment(.center)

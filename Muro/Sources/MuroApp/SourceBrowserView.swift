@@ -132,7 +132,7 @@ struct SourceBrowserView: View {
                     if model.source == .workshop {
                         SceneEngineNoticeCard()
                     }
-                    if model.source == .workshop, !sources.workshopReady {
+                    if model.source == .workshop {
                         WorkshopAccountCard()
                     }
                     if model.source == .workshop, let id = SourceBrowser.workshopID(from: model.query) {
@@ -522,7 +522,7 @@ struct WorkshopAccountCard: View {
 
             if !sources.depotInstalled {
                 HStack(spacing: 12) {
-                    Text("Muro downloads through DepotDownloader, an open source Steam client, fetched from GitHub once.")
+                    Text("Displaypaper downloads through DepotDownloader, an open source Steam client, fetched from GitHub once.")
                         .font(.system(size: 11.5))
                         .foregroundStyle(Color.muroSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -554,7 +554,7 @@ struct WorkshopAccountCard: View {
                     if !sources.workshopUsesQR {
                         GlassTextField(label: "STEAM USERNAME", placeholder: "Account name", text: $sources.workshopUsername)
                     } else {
-                        Text("Scan the code with the Steam app when the download starts.")
+                        Text("Choose QR code, then download a Workshop item. Scan the code here with the Steam app to sign in.")
                             .font(.system(size: 11.5))
                             .foregroundStyle(Color.muroSecondary)
                     }

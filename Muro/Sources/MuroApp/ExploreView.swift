@@ -225,13 +225,7 @@ struct ExploreView: View {
 
     private var filterRow: some View {
         HStack(spacing: 10) {
-            if store.searchActive {
-                SearchField()
-            } else {
-                Text(countLine)
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(Color.muroSecondary)
-            }
+            SearchField()
             Spacer(minLength: 12)
             if narrowed { clearFilters }
             FilterDropdown(

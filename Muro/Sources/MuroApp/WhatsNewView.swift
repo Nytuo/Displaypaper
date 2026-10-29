@@ -41,27 +41,27 @@ enum WhatsNew {
     static let current = WhatsNewRelease(
         version: "5.0",
         date: "September 2026",
-        headline: "Muro can be your screen saver now, it can hold still while you work, and your wallpaper stays on screen even when Muro is not running.",
+        headline: "Displaypaper can be your screen saver now, it can hold still while you work, and your wallpaper stays on screen even when Displaypaper is not running.",
         sections: [
             WhatsNewSection(name: "New", tint: .muroAccent, entries: [
                 WhatsNewEntry(title: "Screen saver",
-                              detail: "Muro plays your wallpapers as the screen saver, and sets when it starts. macOS 26 or newer."),
+                              detail: "Displaypaper plays your wallpapers as the screen saver, and sets when it starts. macOS 26 or newer."),
                 WhatsNewEntry(title: "Play only on desktop",
                               detail: "The wallpaper holds while a window is open, and plays when the desktop is clear."),
                 WhatsNewEntry(title: "Replay on Clear Desktop",
                               detail: "Pause After counts again every time your desktop is clear."),
-                WhatsNewEntry(title: "Quit Muro, keep your wallpaper",
+                WhatsNewEntry(title: "Quit Displaypaper, keep your wallpaper",
                               detail: "The desktop keeps a still of it, and your lock screen keeps its wallpaper through a restart."),
                 WhatsNewEntry(title: "A lock screen on every display",
                               detail: "Applying one used to leave only the last display with it."),
             ]),
             WhatsNewSection(name: "Fixed", tint: .muroGreen, entries: [
                 WhatsNewEntry(title: "The black desktop",
-                              detail: "Changing wallpaper or quitting Muro could leave the desktop black."),
+                              detail: "Changing wallpaper or quitting Displaypaper could leave the desktop black."),
                 WhatsNewEntry(title: "The lock screen on macOS 26",
-                              detail: "On some Macs, Muro saved its choice where macOS never looks."),
+                              detail: "On some Macs, Displaypaper saved its choice where macOS never looks."),
                 WhatsNewEntry(title: "The screen saver stays yours",
-                              detail: "Updating Muro while it was running handed it back to Apple's aerials."),
+                              detail: "Updating Displaypaper while it was running handed it back to Apple's aerials."),
                 WhatsNewEntry(title: "Lighter",
                               detail: "Two things that kept the CPU busy for nothing are gone."),
                 WhatsNewEntry(title: "Some other major bug fixes and improvements",
@@ -76,7 +76,7 @@ enum WhatsNew {
     // footer's "Earlier releases" goes to the releases page, which is the one
     // place that list is complete and does not need shipping in the app.
 
-    static let releasesURL = URL(string: "https://github.com/MrRockySL/Muro/releases")!
+    static let releasesURL = URL(string: "https://github.com/Nytuo/Muro/releases")!
 }
 
 // MARK: - The sheet
@@ -163,7 +163,7 @@ struct WhatsNewView: View {
     private var releaseCard: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text("Muro \(release.version)")
+                Text("Displaypaper \(release.version)")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                 if let date = release.date {
@@ -249,7 +249,7 @@ struct WhatsNewView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Muro \(update.version)")
+                Text("Displaypaper \(update.version)")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(.white)
                 if let title = update.title {
@@ -280,7 +280,7 @@ struct WhatsNewView: View {
             }
 
             HStack(spacing: 10) {
-                PrimaryPill(title: "Download Muro \(update.version)") {
+                PrimaryPill(title: "Download Displaypaper \(update.version)") {
                     store.downloadUpdate()
                 }
                 GhostPill(title: "Release Notes") {
@@ -401,8 +401,8 @@ struct WhatsNewView: View {
         SheetFooter {
             Text(
                 store.latestRelease == nil
-                    ? "You are running Muro \(AppStore.appVersion), the latest version"
-                    : "You are running Muro \(AppStore.appVersion)"
+                    ? "You are running Displaypaper \(AppStore.appVersion), the latest version"
+                    : "You are running Displaypaper \(AppStore.appVersion)"
             )
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(Color.muroSecondary)

@@ -7,7 +7,7 @@ enum SceneEngineNotice {
     static let title = "Scenes are in beta"
 
     static let message = """
-    Wallpaper Engine's scene format is not documented, so Muro's support for it \
+    Wallpaper Engine's scene format is not documented, so WER (Wallpaper Engine Rosetta) and thus Displaypaper support for it \
     was worked out from real Workshop items. A scene can look wrong, be missing \
     an effect, or fail to load, and this part is still being worked on.
 
@@ -33,7 +33,7 @@ struct SceneEngineNoticeCard: View {
                 Text(SceneEngineNotice.title)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(.white)
-                Text("Scene wallpapers are translated from a format Muro (from WER) had to work out, so some come out wrong or need Wallpaper Engine's own textures. Video wallpapers are not affected.")
+                Text("Scene wallpapers are translated from a format Displaypaper (from WER) had to work out, so some come out wrong or need Wallpaper Engine's own textures. Video wallpapers are not affected.")
                     .font(.system(size: 11.5))
                     .foregroundStyle(Color.muroSecondary)
                     .fixedSize(horizontal: false, vertical: true)

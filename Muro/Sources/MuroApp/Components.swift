@@ -154,7 +154,7 @@ struct TopBar: View {
             MuroMark(cornerRadius: 8)
                 .frame(width: 34, height: 34)
             VStack(alignment: .leading, spacing: 3) {
-                Text("Muro")
+                Text("Displaypaper")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(.white)
                 CreditLink(text: "made by \(Credits.name)")
@@ -189,32 +189,12 @@ struct TopBar: View {
         .animation(.easeOut(duration: 0.22), value: store.tab)
     }
 
-    /// Search, What's New, import and settings.
-    ///
-    /// All four are the Library's import bubble: same glass, same accent
-    /// light, same lift under the pointer and dip on the press. They used to
-    /// be flat 8% circles with a grey SF Symbol in them, which is the one
-    /// piece of 2.0 chrome the 3.0 pages had left standing.
+    /// Updates, import and settings.
     private var actions: some View {
-        HStack(spacing: 12) {
-            GlassBubbleButton(
-                systemName: "magnifyingglass",
-                glyphScale: 0.42,
-                active: store.searchActive,
-                help: "Search wallpapers"
-            ) {
-                store.searchActive.toggle()
-                if store.searchActive, store.tab == .home { store.switchTab(.explore) }
-                if !store.searchActive { store.searchText = "" }
-            }
+        HStack(spacing: 10) {
             whatsNew
             ImportButton()
-            GlassBubbleButton(
-                systemName: "gearshape",
-                glyphScale: 0.44,
-                turns: true,
-                help: "Settings"
-            ) {
+            GlassBubbleButton(systemName: "gearshape", glyphScale: 0.44, help: "Settings") {
                 openSettingsWindow()
             }
         }
@@ -232,11 +212,11 @@ extension TopBar {
     fileprivate var whatsNew: some View {
         let update = store.updateAvailable != nil
         return GlassBubbleButton(
-            systemName: "sparkles",
+            systemName: "arrow.down.circle",
             glyphScale: 0.44,
             active: store.whatsNewOpen,
             badged: update,
-            help: update ? "A new version of Muro is available" : "What's New in Muro"
+            help: update ? "A new version of Displaypaper is available" : "What's New in Displaypaper"
         ) {
             store.whatsNewOpen = true
             store.markUpdateSeen()
@@ -271,7 +251,7 @@ struct UpdateCallout: View {
                 .fill(Color.muroAccent.opacity(0.9))
                 .frame(width: 14, height: 7)
             HStack(spacing: 9) {
-                Image(systemName: "arrow.down.circle.fill")
+                Image(systemName: "arrow.down.circle")
                     .font(.system(size: 13, weight: .semibold))
                 Text("New update available")
                     .font(.system(size: 12.5, weight: .semibold))
@@ -347,8 +327,8 @@ struct ImportButton: View {
 
 /// Muro's two `Window` scenes, by the titles SwiftUI gives them.
 enum MuroWindow {
-    static let gallery = "Muro"
-    static let settings = "Muro Settings"
+    static let gallery = "Displaypaper"
+    static let settings = "Displaypaper Settings"
 }
 
 @MainActor
@@ -369,7 +349,7 @@ var muroDocumentWindows: [NSWindow] {
     }
 }
 
-/// The gallery window itself. `Window("Muro", id: "main")` is a SwiftUI scene,
+/// The gallery window itself. `Window("Displaypaper", id: "main")` is a SwiftUI scene,
 /// and closing it only orders it out, so it can always be brought back.
 @MainActor
 var mainWindow: NSWindow? { window(titled: MuroWindow.gallery) }

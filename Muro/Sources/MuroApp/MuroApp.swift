@@ -161,7 +161,7 @@ final class MuroAppDelegate: NSObject, NSApplicationDelegate {
     /// The line is kept because a future report deserves an answer better than
     /// another guess, and because whether an `oapp` event arrives at all for an
     /// `SMAppService` start is still an open question worth one line of proof:
-    ///   log show --last 10m --predicate 'subsystem == "com.mrrockysl.muro"'
+    ///   log show --last 10m --predicate 'subsystem == "com.nytuo.displaypaper"'
     ///
     /// notice, not info. Info level lives in a memory buffer that is dropped
     /// on its own schedule, and the whole point of this line is to still be
@@ -230,7 +230,7 @@ final class MuroAppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// Why the gallery did or did not appear at this launch. One line per start.
-private let launchLog = Logger(subsystem: "com.mrrockysl.muro", category: "launch")
+private let launchLog = Logger(subsystem: "com.nytuo.displaypaper", category: "launch")
 
 @main
 struct MuroApp: App {
@@ -358,13 +358,13 @@ struct RootView: View {
             }
             Button("Later", role: .cancel) { store.lockScreenNeedsSystemSettings = false }
         } message: {
-            Text("Muro set your lock screen wallpaper but macOS has not picked it up yet. Open System Settings, go to Wallpaper, and choose Muro to finish it.")
+            Text("Displaypaper set your lock screen wallpaper but macOS has not picked it up yet. Open System Settings, go to Wallpaper, and choose Displaypaper to finish it.")
         }
         // A damaged library.json stops every edit, because Muro will not write
         // over a list it could not read. Saying so is the difference between
         // an app protecting the user's library and an app that has silently
         // stopped responding.
-        .alert("Muro cannot read your wallpaper list", isPresented: $store.libraryUnreadable) {
+        .alert("Displaypaper cannot read your wallpaper list", isPresented: $store.libraryUnreadable) {
             Button("Show the File") {
                 store.libraryUnreadable = false
                 NSWorkspace.shared.activateFileViewerSelecting([
@@ -373,7 +373,7 @@ struct RootView: View {
             }
             Button("Later", role: .cancel) { store.libraryUnreadable = false }
         } message: {
-            Text("Your wallpapers are safe on disk, and Muro has stopped rather than overwrite the list with an empty one. Liking, importing and downloading will not work until library.json is repaired or moved out of Muro's folder.")
+            Text("Your wallpapers are safe on disk, and Displaypaper has stopped rather than overwrite the list with an empty one. Liking, importing and downloading will not work until library.json is repaired or moved out of Displaypaper's folder.")
         }
         .alert(
             Text(store.deleteNotice?.title ?? ""),

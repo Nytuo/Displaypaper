@@ -26,6 +26,7 @@ struct WallpaperItem: Identifiable, Equatable {
     var isDownloaded: Bool { local != nil }
     /// A Wallpaper Engine scene, rendered live rather than played as a video.
     var isScene: Bool { local?.isScene ?? false }
+    var isWeb: Bool { local?.web != nil }
     /// Carries sound of its own: a video's audio track, or a scene's audio
     /// layer. Muro plays it only if Wallpaper Sound is turned up.
     var hasAudio: Bool { local?.hasAudio ?? false }
@@ -54,7 +55,7 @@ struct WallpaperItem: Identifiable, Equatable {
 
     var badges: [Badge] {
         var out: [Badge] = []
-        if isScene { out.append(Badge(id: "kind", text: "SCENE", accent: true)) }
+        if isScene { out.append(Badge(id: "kind", text: isWeb ? "WEB" : "SCENE", accent: true)) }
         if let source = sourceBadge { out.append(Badge(id: "source", text: source)) }
         if width > 0 { out.append(Badge(id: "quality", text: resolutionLabel)) }
         if hasAudio { out.append(Badge(id: "audio", systemImage: "speaker.wave.2.fill")) }
@@ -742,7 +743,7 @@ final class AppStore: ObservableObject {
     /// Baked-in default (PLAN §2.7): catalog.json on Cloudflare R2, served
     /// from the bucket's public URL. The app fetches it anonymously — it
     /// carries no credentials; only muro-publish (owner's machine) can write.
-    /// Overridable via `defaults write com.mrrockysl.muro catalogURL …`;
+    /// Overridable via `defaults write com.nytuo.displaypaper catalogURL …`;
     /// empty falls back here.
     ///
     /// Served from the bucket's own domain. This replaced the free r2.dev
@@ -761,8 +762,8 @@ final class AppStore: ObservableObject {
     /// new default, so a URL retired without being listed here would keep
     /// every existing install on the old host for good.
     static let retiredCatalogURLs = [
-        "https://raw.githubusercontent.com/MrRockySL/Muro/main/catalog.json",
-        "https://raw.githubusercontent.com/MrRockySL/Muro-Wallpapers/main/catalog.json",
+        "https://raw.githubusercontent.com/Nytuo/Muro/main/catalog.json",
+        "https://raw.githubusercontent.com/Nytuo/Muro-Wallpapers/main/catalog.json",
         "https://pub-e910bedfcb17480a8067dba142403816.r2.dev/catalog.json",
     ]
 
@@ -857,8 +858,8 @@ final class AppStore: ObservableObject {
     /// Release page URL when GitHub has a newer version than this build.
     @Published var updateAvailable: URL?
 
-    /// Where the "Support Muro" row in Settings goes.
-    static let sponsorURL = URL(string: "https://github.com/sponsors/MrRockySL")!
+    /// Where the "Support Displaypaper" row in Settings goes.
+    static let sponsorURL = URL(string: "https://github.com/sponsors/Nytuo")!
 
     /// This build's version, or "dev" when there is no bundle to read one
     /// from, which prevent the updater to show up during dev
@@ -906,7 +907,7 @@ final class AppStore: ObservableObject {
             updateCalloutVisible = false
             return
         }
-        guard let url = URL(string: "https://api.github.com/repos/MrRockySL/Muro/releases/latest"),
+        guard let url = URL(string: "https://api.github.com/repos/Nytuo/Muro/releases/latest"),
               let (data, response) = try? await URLSession.shared.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -934,7 +935,7 @@ final class AppStore: ObservableObject {
     /// Forget the outcome of a finished check, so the next place that shows it
     /// starts by offering the check rather than reporting an old answer.
     ///
-    /// "Muro is up to date" and "Could not check" answer a question that was
+    /// "Displaypaper is up to date" and "Could not check" answer a question that was
     /// asked at some point in the past, and a panel that reopens still showing
     /// one of them looks like it is reporting something current. "5.0 is
     /// available" is cleared too: the fact survives in `latestRelease`, which
@@ -1551,7 +1552,7 @@ final class AppStore: ObservableObject {
             // Dropping a folder, an image or an unsupported video used to do
             // nothing whatsoever, with no hint as to why.
             if !urls.isEmpty {
-                importError = "Muro imports MP4, MOV and M4V videos. Nothing was added."
+                importError = "Displaypaper imports MP4, MOV and M4V videos. Nothing was added."
             }
             return
         }
@@ -1591,7 +1592,7 @@ final class AppStore: ObservableObject {
                 } else if skipped > 0 {
                     AppStore.shared.importError =
                         "\(skipped) file\(skipped == 1 ? " was" : "s were") skipped. "
-                        + "Muro imports MP4, MOV and M4V videos."
+                        + "Displaypaper imports MP4, MOV and M4V videos."
                 }
             }
         }

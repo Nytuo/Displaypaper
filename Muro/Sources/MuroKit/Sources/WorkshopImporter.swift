@@ -66,6 +66,8 @@ public enum WorkshopImporter {
             let entry = try importVideoItem(item: item, project: project, title: title, origin: origin, root: root)
             try? FileManager.default.removeItem(at: item)
             return Result(entry: entry, skipped: [])
+        case "web":
+            return try importWebItem(item: item, project: project, title: title, origin: origin, root: root)
         case "scene":
             return try importSceneItem(item: item, project: project, title: title, origin: origin, root: root)
         case let other:
@@ -146,6 +148,36 @@ public enum WorkshopImporter {
                 source: source, title: title, category: category, root: root,
                 preserveOriginal: false, origin: origin
             )
+        }
+    }
+
+    private static func importWebItem(item: URL, project: Project, title: String, origin: String, root: URL) throws -> Result {
+        guard let file = project.file, isInside(item, item.appendingPathComponent(file)),
+              FileManager.default.fileExists(atPath: item.appendingPathComponent(file).path) else {
+            throw ImportError.notAWorkshopItem
+        }
+        let manager = FileManager.default
+        let id = UUID().uuidString.lowercased()
+        let relative = "Web/\(id)"
+        let directory = root.appendingPathComponent(relative, isDirectory: true)
+        let thumbnailRelative = "Thumbnails/\(id).jpg"
+        let thumbnail = root.appendingPathComponent(thumbnailRelative)
+        try manager.createDirectory(at: directory.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try manager.moveItem(at: item, to: directory)
+        do {
+            try manager.createDirectory(at: thumbnail.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if let preview = project.preview, isInside(directory, directory.appendingPathComponent(preview)) {
+                writeThumbnail(from: directory.appendingPathComponent(preview), to: thumbnail)
+            }
+            let entry = WallpaperEntry(id: id, title: title, category: WallpaperSource.workshop.libraryCategory,
+                file: "\(relative)/\(file)", thumbnail: thumbnailRelative, width: 1920, height: 1080,
+                fps: 30, duration: 0, sizeBytes: folderSize(directory), web: relative, origin: origin)
+            try LibraryWriter.update(root: root) { $0.wallpapers.append(entry) }
+            return Result(entry: entry, skipped: [])
+        } catch {
+            try? manager.removeItem(at: directory)
+            try? manager.removeItem(at: thumbnail)
+            throw error
         }
     }
 
@@ -250,7 +282,7 @@ public enum WorkshopImporter {
             .appendingPathComponent("muro-\(UUID().uuidString).mp4")
         let process = Process()
         process.executableURL = ffmpeg
-        process.arguments = ["-y", "-i", source.path, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-an", output.path]
+        process.arguments = ["-y", "-i", source.path, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", output.path]
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try process.run()
@@ -277,7 +309,7 @@ public enum WorkshopImporter {
 
     /// The scene engine runs ffmpeg by name for a scene's WebM layers, so it
     /// needs Homebrew on this process's PATH to find it.
-    private static func makeToolsReachable() {
+    public static func makeToolsReachable() {
         let current = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
         let missing = extraToolDirectories.filter { !current.split(separator: ":").contains(Substring($0)) }
         guard !missing.isEmpty else { return }
@@ -287,7 +319,7 @@ public enum WorkshopImporter {
     /// project.json names files relative to the item, and must not be able to
     /// name one outside it.
     private static func isInside(_ directory: URL, _ candidate: URL) -> Bool {
-        candidate.standardizedFileURL.path.hasPrefix(directory.standardizedFileURL.path + "/")
+        candidate.resolvingSymlinksInPath().standardizedFileURL.path.hasPrefix(directory.resolvingSymlinksInPath().standardizedFileURL.path + "/")
     }
 
     private static func folderSize(_ directory: URL) -> Int64 {

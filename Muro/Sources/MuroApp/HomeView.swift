@@ -2,59 +2,21 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var store: AppStore
-    @State private var pickPage = 0
-    @State private var dropPage = 0
-
-    /// Which way each row was last paged, so the cards leave towards the
-    /// arrow that was pressed and the new ones arrive from the far side. Kept
-    /// per row, because paging one row must not throw the other into reverse.
-    /// Same idea as the Library's own `tabShift`.
-    @State private var pickShift: CGFloat = 1
-    @State private var dropShift: CGFloat = 1
-
-    // The curve and the transition itself live in `Theme.swift` as
-    // `.muroPage`, because every page change in the app now uses them.
-
-    /// The most recent drop, which is the whole point of the row: it is the
-    /// batch as published, and it stays put until a newer one is published.
-    private var dropItems: [WallpaperItem] { store.latestDropItems }
-
-    /// Twelve at random, redrawn each launch. The store owns the draw so it
-    /// survives this view being rebuilt on every tab switch.
-    private var pickItems: [WallpaperItem] { store.pickItems }
-
     var body: some View {
-        // Same coloured surface Explore and Library sit on. Home used to be
-        // flat `muroBG` on the theory that the hero is already a 4K video and
-        // anything behind it is noise, but the hero is only the top 560pt:
-        // everything under it, which is most of the page once you scroll, was
-        // a flatter and darker grey than the other two tabs. No `GlassTray`
-        // here, unlike those two, because the hero is deliberately full bleed
-        // and a tray would inset it away from the window edge.
-        ZStack {
-            MuroPageBackground()
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
+        GeometryReader { geometry in
+            ZStack {
+                MuroPageBackground()
+                VStack(spacing: 0) {
                     hero
-                    heroSelector
-                        .padding(.top, 22)
-                        .padding(.horizontal, 64)
-                    if !dropItems.isEmpty {
-                        dropSection
-                            .padding(.top, 44)
-                            .padding(.horizontal, 64)
-                    }
-                    pickSection
-                        .padding(.top, 44)
-                        .padding(.horizontal, 64)
-                        .padding(.bottom, 48)
+                        .frame(height: geometry.size.height * 0.58)
+                    Spacer(minLength: 10)
+                    recentSection
+                        .padding(.horizontal, 48)
+                        .padding(.bottom, 22)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .ignoresSafeArea(edges: .top)
-            // A drop that lands while the app is open replaces the row's
-            // contents under whatever page the user had turned to, which would
-            // otherwise leave them looking at a page that no longer exists.
-            .onChange(of: dropItems.first?.id) { _, _ in dropPage = 0 }
         }
     }
 
@@ -107,7 +69,7 @@ struct HomeView: View {
                     .padding(.leading, 64)
                     .padding(.bottom, 44)
             }
-            .frame(height: 560)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .clipped()
         } else {
             emptyLibraryHero
@@ -191,138 +153,36 @@ struct HomeView: View {
                 .foregroundStyle(Color.muroSecondary)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 560)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Hero selector strip
-
-    private var heroSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(store.heroSelectorItems.prefix(10)) { item in
-                    let active = store.heroItem?.id == item.id
-                    Color.black
-                        .frame(width: active ? 104 : 96, height: active ? 64 : 58)
-                        .overlay(ThumbImage(item: item))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(
-                                    active ? Color.white : Color.white.opacity(0.1),
-                                    lineWidth: active ? 2 : 1
-                                )
-                        )
-                        .onTapGesture { store.heroID = item.id }
-                }
-            }
-            .frame(height: 64)
-        }
-    }
-
-    // MARK: - Card rows
-
-    /// The newest batch of wallpapers published, above the picks.
-    ///
-    /// The NEW badge on these cards is the same one Explore shows and behaves
-    /// the same way: it marks what has arrived since this install last looked
-    /// and fades after a launch or two. The row itself does not. It keeps
-    /// showing this drop until a newer one is published, so it is still the
-    /// place to find what is new long after the badges have gone.
-    private var dropSection: some View {
-        cardRow(
-            title: "New Live Wallpapers",
-            subtitle: "The latest wallpapers added to the catalog",
-            items: dropItems,
-            page: $dropPage,
-            shift: $dropShift
-        )
-    }
-
-    /// The subtitle had to move with the row. It said hand-picked from your
-    /// library while listing the whole catalog in array order, which was
-    /// wrong twice over, and it would have stayed wrong now the row is a
-    /// random draw.
-    private var pickSection: some View {
-        cardRow(
-            title: "Muro's Pick",
-            subtitle: "A different twelve every day",
-            items: pickItems,
-            page: $pickPage,
-            shift: $pickShift
-        )
-    }
-
-    /// One titled row of three cards with a pager. Both Home rows are the same
-    /// shape, and were the same code written twice until there were two of
-    /// them.
-    private func cardRow(
-        title: String,
-        subtitle: String,
-        items: [WallpaperItem],
-        page: Binding<Int>,
-        shift: Binding<CGFloat>
-    ) -> some View {
-        let count = max(1, (items.count + 2) / 3)
-        let start = page.wrappedValue * 3
-        let shown = start < items.count
-            ? Array(items[start..<min(start + 3, items.count)])
-            : []
-        return VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.white)
-                    Text(subtitle)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Color.muroSecondary)
-                }
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Recently Set")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(.white)
                 Spacer()
-                HStack(spacing: 8) {
-                    pagerButton(systemName: "chevron.left", enabled: page.wrappedValue > 0) {
-                        // Direction first, outside the animation: the
-                        // transition is built while the view re-renders, so it
-                        // has to already know which way this page is going.
-                        shift.wrappedValue = -1
-                        withAnimation(.muroPage) { page.wrappedValue -= 1 }
-                    }
-                    pagerButton(systemName: "chevron.right", enabled: page.wrappedValue < count - 1) {
-                        shift.wrappedValue = 1
-                        withAnimation(.muroPage) { page.wrappedValue += 1 }
-                    }
-                }
+                Text(store.recentItems.isEmpty ? "Wallpapers you set will appear here" : "\(store.recentItems.count) recent")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.muroSecondary)
             }
-            // A ZStack rather than the bare HStack. A transition means both
-            // pages exist for the moment it runs, and in the VStack they would
-            // stack up and shove the rest of Home down the screen mid
-            // animation. Overlaid, they pass through each other in place.
-            ZStack {
-                HStack(spacing: 24) {
-                    ForEach(shown) { item in
+            if store.recentItems.isEmpty {
+                Text("Wallpapers you apply will appear here.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.muroSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+            } else {
+                HStack(spacing: 18) {
+                    ForEach(Array(store.recentItems.prefix(4))) { item in
                         WallpaperCard(item: item)
-                    }
-                    // Keeps a short last page's cards the same width as a full
-                    // one's rather than letting three columns become one.
-                    if shown.count < 3 {
-                        ForEach(0..<(3 - shown.count), id: \.self) { _ in Color.clear }
+                            .frame(maxWidth: .infinity)
                     }
                 }
-                // The `.id` is what makes this a page change at all: without
-                // it SwiftUI reuses the same three cards and just swaps their
-                // images, which no transition can animate.
-                .id(page.wrappedValue)
-                .transition(.muroPage(shift: shift.wrappedValue))
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
 
-    /// The same glass bubble as the top bar's controls. Home had the last two
-    /// flat 8% circles left in the app, and next to a lit bubble a flat one
-    /// reads as a control that is switched off.
-    private func pagerButton(systemName: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        GlassBubbleButton(systemName: systemName, size: 34, glyphScale: 0.33, action: action)
-            .disabled(!enabled)
-            .opacity(enabled ? 1 : 0.35)
-    }
 }

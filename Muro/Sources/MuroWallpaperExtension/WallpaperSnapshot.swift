@@ -14,7 +14,7 @@ import ObjectiveC
 /// This extension used to answer with nothing, so the export failed:
 ///
 ///     export-controller: Exporting wallpaper '<... provider=
-///       com.mrrockysl.muro.wallpaper-extension>' - snapshotting
+///       com.nytuo.displaypaper.wallpaper-extension>' - snapshotting
 ///     extension-proxy: ERROR - snapshot: WallpaperExtensionError (2)
 ///     export-controller: ERROR - due to 'Failed to create snapshot to export'
 ///

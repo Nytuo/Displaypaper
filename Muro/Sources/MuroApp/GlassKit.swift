@@ -59,52 +59,16 @@ struct BubbleSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(width: size, height: size)
-            // The accent light lives inside the circle.
-            //
-            // It used to be a radial gradient nearly four times the diameter,
-            // painted behind the bubble so it lit the card around it. At the
-            // sizes this is actually used at that is not a glow, it is a
-            // purple smudge with a button in the middle of it, and the edge of
-            // the gradient is visible against the panel. Clipping the same
-            // light to the circle keeps the lit look and stops it leaking.
             .background {
-                Circle()
-                    .fill(.glassSheen(lit ? 0.26 : 0.20, lit ? 0.09 : 0.06))
-                    .overlay {
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                tint.opacity(active ? 0.38 : (hovering ? 0.30 : 0.20)),
-                                tint.opacity(0)
-                            ]),
-                            center: .center, startRadius: 0, endRadius: size * 0.52
-                        )
-                        .clipShape(Circle())
-                    }
+                Circle().fill(.ultraThinMaterial)
+                    .overlay(Circle().fill(tint.opacity(lit ? 0.10 : 0.035)))
             }
-            .overlay(
-                Circle().strokeBorder(
-                    active ? tint.opacity(0.55) : Color.white.opacity(hovering ? 0.34 : 0.26),
-                    lineWidth: 1
-                )
-            )
-            // The top inner highlight, so the bubble looks lit rather than
-            // filled.
-            .overlay(
-                Circle()
-                    .trim(from: 0.55, to: 0.95)
-                    .stroke(Color.white.opacity(0.30), lineWidth: 1)
-                    .blur(radius: 0.5)
-                    .padding(1)
-            )
-            .shadow(color: .black.opacity(0.35), radius: pressed ? 3 : 7, x: 0, y: pressed ? 1 : 4)
-            .shadow(color: tint.opacity(active ? 0.28 : 0), radius: 10)
-            // It lifts under the pointer and dips when pressed, so clicking
-            // the strip feels like pressing something rather than like
-            // nothing happening until a file panel appears.
-            .scaleEffect(pressed ? 0.94 : (hovering ? 1.06 : 1))
-            .animation(.spring(response: 0.26, dampingFraction: 0.62), value: hovering)
-            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: pressed)
-            .animation(.easeOut(duration: 0.2), value: active)
+            .overlay(Circle().strokeBorder(Color.white.opacity(lit ? 0.24 : 0.13), lineWidth: 1))
+            .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
+            .scaleEffect(pressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.14), value: hovering)
+            .animation(.easeOut(duration: 0.1), value: pressed)
+            .animation(.easeOut(duration: 0.14), value: active)
     }
 }
 
@@ -191,7 +155,7 @@ struct GlassBubbleButton: View {
             Image(systemName: systemName)
                 .font(.system(size: size * glyphScale, weight: weight))
                 .foregroundStyle(tint)
-                .shadow(color: tint.opacity(0.45), radius: hovering ? 5 : 3)
+
                 .rotationEffect(.degrees(turns && hovering ? 40 : 0))
                 .animation(.spring(response: 0.34, dampingFraction: 0.7), value: hovering)
         }
