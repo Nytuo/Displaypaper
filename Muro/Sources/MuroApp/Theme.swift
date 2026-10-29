@@ -48,16 +48,24 @@ struct LiquidGlass: ViewModifier {
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
             content
                 .glassEffect(tint > 0 ? .regular.tint(Color.black.opacity(tint)) : .regular, in: shape)
                 .overlay(shape.strokeBorder(Color.white.opacity(stroke), lineWidth: 1))
         } else {
-            content
-                .background(shape.fill(Color.black.opacity(tint)))
-                .background(.ultraThinMaterial, in: shape)
-                .overlay(shape.strokeBorder(Color.white.opacity(stroke), lineWidth: 1))
+            fallback(content, shape: shape)
         }
+        #else
+        fallback(content, shape: shape)
+        #endif
+    }
+
+    private func fallback(_ content: Content, shape: RoundedRectangle) -> some View {
+        content
+            .background(shape.fill(Color.black.opacity(tint)))
+            .background(.ultraThinMaterial, in: shape)
+            .overlay(shape.strokeBorder(Color.white.opacity(stroke), lineWidth: 1))
     }
 }
 

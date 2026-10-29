@@ -594,31 +594,40 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var updateControl: some View {
+        switch store.updateInstallState {
+        case .downloading:
+            ProgressView().controlSize(.small).frame(width: 120)
+        case .installing:
+            Label("Restarting…", systemImage: "arrow.clockwise")
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(Color.muroSecondary)
+        case .failed(let message):
+            VStack(alignment: .trailing, spacing: 4) {
+                Button("Try Again") { store.downloadUpdate() }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                Text(message).font(.system(size: 10)).foregroundStyle(Color.muroWarn).lineLimit(2)
+            }.frame(maxWidth: 180, alignment: .trailing)
+        case .idle:
+            updateAction
+        }
+    }
+
+    @ViewBuilder private var updateAction: some View {
         switch store.updateCheck {
         case .checking:
-            ProgressView()
-                .controlSize(.small)
-                .frame(width: 96)
+            ProgressView().controlSize(.small).frame(width: 96)
         case .available:
-            // Muro is not self-updating, so this hands over the DMG itself
-            // when the release has one and the release page when it does not.
-            Button("Download ↗") { store.downloadUpdate() }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.black)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 5.5)
-                .background(Capsule().fill(Color.muroAccent))
+            Button(store.latestRelease?.installURL == nil ? "Download ↗" : "Install & Restart") {
+                store.downloadUpdate()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
         default:
             Button("Check Now") {
                 Task { await store.checkForUpdates(userInitiated: true) }
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 5.5)
-            .glassCapsule(fill: 0.09, stroke: 0.15)
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
     }
 

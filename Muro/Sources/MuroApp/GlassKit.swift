@@ -1122,13 +1122,21 @@ private struct GlassMaterial: ViewModifier {
     let tint: Double
 
     @ViewBuilder func body(content: Content) -> some View {
+        #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
             content.glassEffect(.regular.tint(Color.black.opacity(tint)), in: shape)
         } else {
-            content
-                .background(shape.fill(Color.black.opacity(tint)))
-                .background(.ultraThinMaterial, in: shape)
+            fallback(content)
         }
+        #else
+        fallback(content)
+        #endif
+    }
+
+    private func fallback(_ content: Content) -> some View {
+        content
+            .background(shape.fill(Color.black.opacity(tint)))
+            .background(.ultraThinMaterial, in: shape)
     }
 }
 

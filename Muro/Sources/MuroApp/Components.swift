@@ -11,6 +11,13 @@ import UniformTypeIdentifiers
 /// limit at all, so scrolling the full catalog could hold hundreds of
 /// megabytes in an app that promises to stay under 150.
 enum ImageCache {
+    /// AppKit images are created on a worker and handed to SwiftUI after decode.
+    /// The image is immutable after construction; this wrapper makes that one-way
+    /// ownership transfer explicit to Swift's concurrency checker.
+    struct LoadedImage: @unchecked Sendable {
+        let value: NSImage?
+    }
+
     private static let cache: NSCache<NSString, NSImage> = {
         let cache = NSCache<NSString, NSImage>()
         cache.totalCostLimit = 64 * 1024 * 1024
@@ -119,9 +126,10 @@ struct ThumbImage: View {
             return
         }
         let pixels = maxPixels
-        let loaded = await Task.detached(priority: .userInitiated) {
-            ImageCache.load(path: path, maxPixels: pixels)
+        let result = await Task.detached(priority: .userInitiated) {
+            ImageCache.LoadedImage(value: ImageCache.load(path: path, maxPixels: pixels))
         }.value
+        let loaded = result.value
         // A scrolled-away card may have been reused for another wallpaper
         // while this was decoding.
         guard path == store.thumbnailPath(for: item) else { return }

@@ -208,13 +208,14 @@ final class MuroAppDelegate: NSObject, NSApplicationDelegate {
     /// Record that this session ended with the Mac rather than with someone
     /// quitting Muro. Read, and cleared, by `recordLaunchKind()` next time.
     private func watchForSessionEnd() {
+        let sessionEndedKey = Self.sessionEndedKey
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.willPowerOffNotification,
             object: nil,
             queue: .main
         ) { _ in
             let defaults = UserDefaults.standard
-            defaults.set(true, forKey: Self.sessionEndedKey)
+            defaults.set(true, forKey: sessionEndedKey)
             // The Mac is going down and Muro can be killed before the periodic
             // flush, which would lose the one fact the next launch needs.
             defaults.synchronize()

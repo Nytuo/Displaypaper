@@ -280,7 +280,7 @@ struct WhatsNewView: View {
             }
 
             HStack(spacing: 10) {
-                PrimaryPill(title: "Download Displaypaper \(update.version)") {
+                PrimaryPill(title: store.latestRelease?.installURL == nil ? "Download Displaypaper \(update.version)" : "Install & Restart Displaypaper \(update.version)") {
                     store.downloadUpdate()
                 }
                 GhostPill(title: "Release Notes") {

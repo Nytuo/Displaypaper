@@ -8,8 +8,8 @@ set -e
 # The one place Muro's version is written. The app bundle, the wallpaper
 # extension and the DMG name are all derived from these two lines, and the
 # build fails below if the app and the extension ever disagree.
-VERSION="5.0"
-BUILD="36"
+VERSION="${DISPLAYPAPER_VERSION:-5.0}"
+BUILD="${DISPLAYPAPER_BUILD:-36}"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 APP="$DIR/dist/Displaypaper.app"
@@ -89,10 +89,11 @@ MURO_LIB="${MURO_LIB:-$HOME/Library/Application Support/Muro}"
 if [[ -f "$MURO_LIB/Masters/$BUNDLED_ID.mov" && -f "$MURO_LIB/Thumbnails/$BUNDLED_ID.jpg" ]]; then
     cp "$MURO_LIB/Masters/$BUNDLED_ID.mov"    "$APP/Contents/Resources/BundledWallpaper.mov"
     cp "$MURO_LIB/Thumbnails/$BUNDLED_ID.jpg" "$APP/Contents/Resources/BundledWallpaper.jpg"
+elif [[ "${DISPLAYPAPER_ALLOW_MISSING_BUNDLE:-0}" == "1" ]]; then
+    echo "==> no bundled wallpaper provided by CI; building without personal library media"
 else
     echo "ERROR: bundled wallpaper $BUNDLED_ID not found in $MURO_LIB" >&2
-    echo "       (Snowfall in Forest must be in the local library — a DMG without" >&2
-    echo "       it ships a blank hero on fresh installs)" >&2
+    echo "       Set DISPLAYPAPER_ALLOW_MISSING_BUNDLE=1 for CI release builds." >&2
     exit 1
 fi
 

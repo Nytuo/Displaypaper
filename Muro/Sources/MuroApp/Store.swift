@@ -881,6 +881,11 @@ final class AppStore: ObservableObject {
 
     @Published var updateCheck: UpdateCheck = .idle
 
+    enum UpdateInstallState: Equatable {
+        case idle, downloading, installing, failed(String)
+    }
+    @Published var updateInstallState: UpdateInstallState = .idle
+
     /// The newer release GitHub is offering, with its notes and its DMG.
     /// Nil whenever this build is current. What's New reads it directly.
     @Published var latestRelease: ReleaseInfo?
@@ -966,13 +971,135 @@ final class AppStore: ObservableObject {
         UserDefaults.standard.set(version, forKey: Self.seenUpdateKey)
     }
 
-    /// Download the new Muro: the release's DMG when it has one, its release
-    /// page otherwise. Never a dead end.
+    /// Start installation from the ZIP attached to the selected GitHub release.
+    /// A DMG remains available as a fallback for releases made before this updater.
     func downloadUpdate() {
         guard let release = latestRelease else { return }
-        NSWorkspace.shared.open(release.downloadURL ?? release.page)
-        markUpdateSeen()
+        if release.installURL != nil {
+            Task { await installUpdate() }
+        } else {
+            NSWorkspace.shared.open(release.downloadURL ?? release.page)
+            markUpdateSeen()
+        }
     }
+
+    /// Fetch, validate, stage, replace and relaunch from the GitHub app bundle ZIP.
+    func installUpdate() async {
+        guard updateInstallState != .downloading, updateInstallState != .installing,
+              let release = latestRelease, let url = release.installURL else {
+            if let release = latestRelease { NSWorkspace.shared.open(release.downloadURL ?? release.page) }
+            return
+        }
+        updateInstallState = .downloading
+        let stageRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Displaypaper-update-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: stageRoot, withIntermediateDirectories: true)
+            let (temporaryZip, response) = try await URLSession.shared.download(from: url)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw UpdateInstallError.downloadFailed
+            }
+            let zip = stageRoot.appendingPathComponent("update.zip")
+            try FileManager.default.moveItem(at: temporaryZip, to: zip)
+            let extracted = stageRoot.appendingPathComponent("extracted", isDirectory: true)
+            try FileManager.default.createDirectory(at: extracted, withIntermediateDirectories: true)
+            try Self.runUpdateTool("/usr/bin/ditto", ["-x", "-k", zip.path, extracted.path])
+            let newApp = extracted.appendingPathComponent("Displaypaper.app", isDirectory: true)
+            guard let newBundle = Bundle(url: newApp),
+                  newBundle.bundleIdentifier == "com.nytuo.displaypaper",
+                  newBundle.infoDictionary?["CFBundleShortVersionString"] as? String == release.version
+            else { throw UpdateInstallError.invalidBundle }
+            try Self.runUpdateTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", newApp.path])
+
+            let destination = Bundle.main.bundleURL.standardizedFileURL
+            guard destination.pathExtension == "app" else { throw UpdateInstallError.invalidBundle }
+            let needsAdministrator = !FileManager.default.isWritableFile(
+                atPath: destination.deletingLastPathComponent().path
+            )
+            let helper = stageRoot.appendingPathComponent("install.sh")
+            try Self.updateHelper.write(to: helper, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: helper.path)
+            let arguments = [helper.path, "\(ProcessInfo.processInfo.processIdentifier)", newApp.path, destination.path, stageRoot.path]
+            let process = Process()
+            if needsAdministrator {
+                let command = "/bin/sh " + arguments.map(Self.shellQuote).joined(separator: " ")
+                    + " >/tmp/Displaypaper-update.log 2>&1 </dev/null &"
+                let appleScript = "do shell script \"\(command.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+                process.arguments = ["-e", appleScript]
+                process.standardOutput = Pipe()
+                process.standardError = Pipe()
+            } else {
+                process.executableURL = URL(fileURLWithPath: "/bin/sh")
+                process.arguments = arguments
+                process.standardOutput = FileHandle.nullDevice
+                process.standardError = FileHandle.nullDevice
+            }
+            try process.run()
+            if needsAdministrator {
+                process.waitUntilExit()
+                guard process.terminationStatus == 0 else { throw UpdateInstallError.installLocationNotWritable }
+            }
+            updateInstallState = .installing
+            markUpdateSeen()
+            NSApp.terminate(nil)
+        } catch {
+            try? FileManager.default.removeItem(at: stageRoot)
+            updateInstallState = .failed(error.localizedDescription)
+        }
+    }
+
+    private enum UpdateInstallError: LocalizedError {
+        case downloadFailed, invalidBundle, installLocationNotWritable
+        var errorDescription: String? {
+            switch self {
+            case .downloadFailed: return "The update download did not complete. Try again."
+            case .invalidBundle: return "The downloaded update is not a valid Displaypaper release."
+            case .installLocationNotWritable: return "Displaypaper could not get permission to replace the installed app. Try the update again and approve the macOS prompt."
+            }
+        }
+    }
+
+    private static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    private static func runUpdateTool(_ executable: String, _ arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = arguments
+        let output = Pipe()
+        process.standardError = output
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            let detail = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw NSError(domain: "DisplaypaperUpdater", code: Int(process.terminationStatus),
+                          userInfo: [NSLocalizedDescriptionKey: detail?.isEmpty == false ? detail! : "Update validation failed."])
+        }
+    }
+
+    private static let updateHelper = """
+    #!/bin/sh
+    set -eu
+    pid="$1"; staged="$2"; destination="$3"; stage_root="$4"
+    backup="${destination}.update-backup"
+    replacement="${destination}.update-new-$$"
+    while /bin/kill -0 "$pid" 2>/dev/null; do /bin/sleep 0.25; done
+    /usr/bin/ditto "$staged" "$replacement"
+    /bin/rm -rf "$backup"
+    /bin/mv "$destination" "$backup"
+    if /bin/mv "$replacement" "$destination"; then
+        console_uid=$(/usr/bin/stat -f %u /dev/console)
+        /bin/launchctl asuser "$console_uid" /usr/bin/open "$destination"
+        /bin/rm -rf "$backup" "$stage_root"
+    else
+        /bin/mv "$backup" "$destination"
+        /bin/rm -rf "$replacement" "$stage_root"
+        exit 1
+    fi
+    """
 
     // MARK: - Apply
 

@@ -1,0 +1,128 @@
+name: Release Displaypaper
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump (auto follows conventional commits)
+        type: choice
+        default: auto
+        options: [auto, patch, minor, major]
+      version:
+        description: Explicit semver version (overrides bump), for example 5.1.0
+        type: string
+        required: false
+      prerelease:
+        description: Mark the draft release as a prerelease
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Resolve version and release notes
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      notes: ${{ steps.resolve.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: resolve
+        name: Calculate semver and changelog
+        env:
+          BUMP: ${{ inputs.bump }}
+          OVERRIDE: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous=$(git tag --list --sort=-creatordate | grep -E '^v?[0-9]+\.[0-9]+(\.[0-9]+)?$' | head -n1 || true)
+          base=${previous#v}
+          IFS=. read -r major minor patch <<<"${base:-0.0.0}"
+          major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+          if [ -n "$previous" ]; then
+            commits=$(git log --no-merges --format='%s%n%b' "$previous..HEAD")
+          else
+            commits=$(git log --no-merges --format='%s%n%b')
+          fi
+          if [ -n "$OVERRIDE" ]; then
+            version="${OVERRIDE#v}"
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid semver: $OVERRIDE" >&2; exit 1; }
+          else
+            [ -n "$commits" ] || { echo 'No commits since last release.' >&2; exit 1; }
+            bump="$BUMP"
+            if [ "$bump" = auto ]; then
+              if grep -qE '^BREAKING CHANGE:' <<<"$commits" || grep -qE '^[a-zA-Z]+(\([^)]*\))?!:' <<<"$commits"; then
+                bump=major
+              elif grep -qE '^feat(\([^)]*\))?:' <<<"$commits"; then
+                bump=minor
+              else
+                bump="patch"
+              fi
+            fi
+            case "$bump" in
+              major) major=$((major+1)); minor=0; patch=0 ;;
+              minor) minor=$((minor+1)); patch=0 ;;
+              patch) patch=$((patch+1)) ;;
+            esac
+            version="$major.$minor.$patch"
+          fi
+          tag="v$version"
+          ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null || { echo "Tag $tag already exists." >&2; exit 1; }
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          {
+            echo "## Displaypaper $tag"
+            echo
+            if [ -n "$previous" ]; then echo "Changes since [$previous](https://github.com/$GITHUB_REPOSITORY/releases/tag/$previous):"; echo; fi
+            if [ -n "$commits" ]; then
+              if [ -n "$previous" ]; then git log --no-merges --format='- %s (%h)' "$previous..HEAD"; else git log --no-merges --format='- %s (%h)'; fi
+            else echo "- Release $version"; fi
+          } > "$notes_file"
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo 'notes<<RELEASE_NOTES_EOF'
+            cat "$notes_file"
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+          cat "$notes_file" >> "$GITHUB_STEP_SUMMARY"
+
+  build-and-release:
+    name: Build universal macOS release
+    needs: version
+    runs-on: macos-15
+    permissions:
+      contents: write
+    env:
+      DISPLAYPAPER_VERSION: ${{ needs.version.outputs.version }}
+      DISPLAYPAPER_BUILD: ${{ github.run_number }}
+      DISPLAYPAPER_ALLOW_MISSING_BUNDLE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - name: Build and package app and DMG
+        run: ./Muro/build-app.sh --dmg
+      - name: Create updater ZIP
+        run: ditto -c -k --sequesterRsrc --keepParent "Muro/dist/Displaypaper.app" "Muro/dist/Displaypaper-${DISPLAYPAPER_VERSION}-universal.zip"
+      - name: Create draft GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Displaypaper ${{ needs.version.outputs.tag }}
+          body: ${{ needs.version.outputs.notes }}
+          draft: true
+          prerelease: ${{ inputs.prerelease }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            Muro/dist/Displaypaper-${{ needs.version.outputs.version }}.dmg
+            Muro/dist/Displaypaper-${{ needs.version.outputs.version }}-universal.zip
+          fail_on_unmatched_files: true

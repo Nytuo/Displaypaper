@@ -27,6 +27,8 @@ public struct ReleaseInfo: Sendable, Equatable {
     /// The `.dmg` asset, when the release has one, so Download is one click
     /// rather than a trip through the releases page.
     public var downloadURL: URL?
+    /// A ZIP containing the .app bundle for in-app installation.
+    public var installURL: URL?
     public var publishedAt: Date?
     public var notes: [ReleaseNoteSection]
 
@@ -35,6 +37,7 @@ public struct ReleaseInfo: Sendable, Equatable {
         title: String? = nil,
         page: URL,
         downloadURL: URL? = nil,
+        installURL: URL? = nil,
         publishedAt: Date? = nil,
         notes: [ReleaseNoteSection] = []
     ) {
@@ -42,6 +45,7 @@ public struct ReleaseInfo: Sendable, Equatable {
         self.title = title
         self.page = page
         self.downloadURL = downloadURL
+        self.installURL = installURL
         self.publishedAt = publishedAt
         self.notes = notes
     }
@@ -60,9 +64,12 @@ public struct ReleaseInfo: Sendable, Equatable {
         guard !version.isEmpty else { return nil }
 
         let assets = json["assets"] as? [[String: Any]] ?? []
-        let download = assets
-            .first { ($0["name"] as? String)?.lowercased().hasSuffix(".dmg") == true }
-            .flatMap { ($0["browser_download_url"] as? String).flatMap(URL.init) }
+        let assetURL: (String) -> URL? = { suffix in
+            assets.first { ($0["name"] as? String)?.lowercased().hasSuffix(suffix) == true }
+                .flatMap { ($0["browser_download_url"] as? String).flatMap(URL.init) }
+        }
+        let download = assetURL(".dmg")
+        let install = assetURL("-universal.zip") ?? assetURL(".zip")
 
         var published: Date?
         if let raw = json["published_at"] as? String {
@@ -82,6 +89,7 @@ public struct ReleaseInfo: Sendable, Equatable {
             title: title,
             page: page,
             downloadURL: download,
+            installURL: install,
             publishedAt: published,
             notes: ReleaseNotes.parse(json["body"] as? String ?? "")
         )
